@@ -1,3 +1,10 @@
+#
+# nx2pd tool by G. Sterbini
+#
+# Modification history (IE):
+# 
+# - remove dependence from pytimber
+
 from multiprocessing import Pool
 import io
 import time
@@ -8,11 +15,12 @@ from pyspark.sql.types import *
 import numpy as np
 import pandas as pd
 
-import pytimber
-ldb=pytimber.LoggingDB()
-search=ldb.search
-getUnit=ldb.getUnit
-getDescription=ldb.getDescription
+#(IE)
+# import pytimber
+# ldb=pytimber.LoggingDB()
+# search=ldb.search
+# getUnit=ldb.getUnit
+# getDescription=ldb.getDescription
 
 def _replace_specials(myString):
     if isinstance(myString,str):
@@ -29,18 +37,23 @@ def _invert_replace_specials(myString):
         return [i.replace('@','.') for i in myString]
     else:
         assert False
-        
+
 def _importNXCALS(variableName,t1, t2):
     ''' This hidden function takes a string a two pd datastamps. NXCALSsample is the fraction of rows to return.'''
-    start_time = time.time()
-    t1=t1.tz_convert('UTC').tz_localize(None)
-    t2=t2.tz_convert('UTC').tz_localize(None)
-    
+    # start_time = time.time()
+    # t1=t1.tz_convert('UTC').tz_localize(None)
+    # t2=t2.tz_convert('UTC').tz_localize(None)
     try:
-        ds=DataQuery.builder(spark).byVariables().system('CMW').startTime(t1.strftime('%Y-%m-%d %H:%M:%S.%f')).endTime(t2.strftime('%Y-%m-%d %H:%M:%S.%f')).variable(variableName).buildDataset()
+        # ds=DataQuery.builder(spark).byVariables().system('CMW').startTime(t1.strftime('%Y-%m-%d %H:%M:%S.%f')).endTime(t2.strftime('%Y-%m-%d %H:%M:%S.%f')).variable(variableName).buildDataset()
+        ds = DataQuery.builder(spark).byVariables().system('CMW') \
+                .startTime(t1).endTime(t2) \
+                .variable(variableName).buildDataset()
     except:
-        try: 
-            ds=DataQuery.builder(spark).byVariables().system('WINCCOA').startTime(t1.strftime('%Y-%m-%d %H:%M:%S.%f')).endTime(t2.strftime('%Y-%m-%d %H:%M:%S.%f')).variable(variableName).buildDataset()
+        try:
+            # ds=DataQuery.builder(spark).byVariables().system('WINCCOA').startTime(t1.strftime('%Y-%m-%d %H:%M:%S.%f')).endTime(t2.strftime('%Y-%m-%d %H:%M:%S.%f')).variable(variableName).buildDataset()i
+            ds = DataQuery.builder(spark).byVariables().system('WINCCOA') \
+                    .startTime(t1).endTime(t2) \
+                    .variable(variableName).buildDataset()
         except:
             print('Variable not found in CMW and WINCCOA.')
     selectionStringDict={'int':{'value':'nxcals_value','label':'nxcals_value'}, 
@@ -118,3 +131,27 @@ def _to_spark(df, timestampConversion=False, sorted=False,n_cores=4):
     my_df=my_df.rename(columns=myDict)
     aux=spark.createDataFrame(my_df)
     return aux
+
+
+def getDataInWindow(nxvar, t1, t2, torder=False):
+    ''' Get the NXCALS data for the selected variable in the time window '''
+    auxdf = _importNXCALS(nxvar, t1, t2)
+    if torder :
+        auxdf = auxdf.orderBy('timestamp', ascending=True)
+    # auxdf.set_index('timestamp', drop=True, inplace=True)
+    return auxdf.toPandas()
+
+def getFirstDataInWindow(nxvar, t1, t2):
+    ''' Get the first data of the variable in the time window '''
+    auxdf = _importNXCALS(nxvar, t1, t2)
+    auxdf = auxdf.orderBy('timestamp', ascending=True).limit(1)
+    # auxdf.set_index('timestamp', drop=True, inplace=True)
+    return auxdf.toPandas()
+
+def getLastDataInWindow(nxvar, t1, t2):
+    ''' Get the last data of the variable in the time window '''
+    auxdf = _importNXCALS(nxvar, t1, t2)
+    auxdf = auxdf.orderBy('timestamp', ascending=False).limit(1)
+    # auxdf.set_index('timestamp', drop=True, inplace=True)
+    return auxdf.toPandas()
+
