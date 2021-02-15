@@ -62,6 +62,7 @@ def _importNXCALS(variableName,t1, t2):
                          'boolean':{'value':'nxcals_value','label':'nxcals_value'}, 
                          'string':{'value':'nxcals_value','label':'nxcals_value'},
                          'bigint':{'value':'nxcals_value','label':'nxcals_value'},
+                         'struct<elements:array<bigint>,dimensions:array<int>>':{'value':'nxcals_value.elements','label':'elements'},
                          'struct<elements:array<int>,dimensions:array<int>>':{'value':'nxcals_value.elements','label':'elements'},
                          'struct<elements:array<double>,dimensions:array<int>>':{'value':'nxcals_value.elements','label':'elements'},
                          'struct<elements:array<float>,dimensions:array<int>>':{'value':'nxcals_value.elements','label':'elements'},}
